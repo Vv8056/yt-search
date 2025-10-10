@@ -1,0 +1,16 @@
+{
+  "name": "yt-search-stream-api",
+  "version": "1.0.0",
+  "description": "YouTube search + metadata + streaming API using yt-search and ytdl-core. Ready to host on Vercel.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node local-server.js"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "yt-search": "^2.11.2",
+    "ytdl-core": "^4.11.2"
+  }
+}
