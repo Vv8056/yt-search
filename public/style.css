@@ -1,95 +1,4 @@
 /* Reset */
-/* * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-} */
-
-/* Fullscreen background */
-/* #particles-js {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  z-index: -1;
-} */
-
-/* Container */
-/* body {
-  font-family: 'Poppins', sans-serif;
-  color: #fff;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  background: #0f2027;  
-  background: linear-gradient(135deg, #0f2027, #2c5364);
-} */
-
-/* .container {
-  padding: 20px;
-  max-width: 900px;
-} */
-
-/* Heading */
-/* h1 {
-  font-size: 3rem;
-  margin-bottom: 10px;
-}
-
-p {
-  font-size: 1.2rem;
-  margin-bottom: 40px;
-}
-
-/* Cards */
-/* .cards {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-}
-
-.card {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 25px;
-  border-radius: 15px;
-  width: 280px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-  transition: transform 0.3s, background 0.3s;
-}
-
-.card:hover {
-  transform: translateY(-10px);
-  background: rgba(255, 255, 255, 0.2);
-}
-
-code {
-  background: rgba(0,0,0,0.2);
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-} */
-
-/* Footer */
-/* footer {
-  margin-top: 50px;
-  font-size: 0.9rem;
-  opacity: 0.8;
-} */
-
-/* Responsive */
-/* @media (max-width: 768px) {
-  .cards {
-    flex-direction: column;
-    gap: 15px;
-  }
-} */
-
-
-/* Reset */
 * {
   margin: 0;
   padding: 0;
@@ -127,7 +36,7 @@ body {
 h1 {
   font-size: 3.5rem;
   margin-bottom: 15px;
-  background: linear-gradient(90deg, #ff512f, #dd2476);
+  background: linear-gradient(90deg, #ff512f, #23424F);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: gradientShift 5s ease infinite;
