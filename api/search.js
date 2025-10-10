@@ -38,7 +38,21 @@
 // GET /api/search?query=some+text&limit=10&page=1&sort=views
 const ytSearch = require('yt-search');
 
+// CORS helper (minimal and production-safe)
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
 module.exports = async function (req, res) {
+  setCors(res);
+
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  
   const send = (status, data) => res.status(status).json(data);
 
   const q = (req.query.query || req.query.q || '').toString().trim();
