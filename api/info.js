@@ -83,25 +83,30 @@ import ytdl from "ytdl-core";
 
 export default async function handler(req, res) {
   try {
-    const { id } = req.query;
-    if (!id) return res.status(400).json({ error: "Video ID is required" });
+    let { id, url } = req.query;
 
-    // Build URL from videoId
-    const url = `https://www.youtube.com/watch?v=${id}`;
+    // Accept either id or url
+    if (!id && !url) {
+      return res.status(400).json({ error: "Provide ?id=VIDEO_ID or ?url=VIDEO_URL" });
+    }
 
-    // Get video info
+    if (id) {
+      url = `https://www.youtube.com/watch?v=${id}`;
+    }
+
+    // ✅ Always use full URL
     const info = await ytdl.getInfo(url);
 
     const videoDetails = info.videoDetails;
-    const formats = info.formats
-      .filter(f => f.mimeType?.includes("audio")) // only audio formats
-      .map(f => ({
-        itag: f.itag,
-        mimeType: f.mimeType,
-        audioQuality: f.audioQuality,
-        bitrate: f.bitrate,
-        url: f.url
-      }));
+    const audioFormats = ytdl.filterFormats(info.formats, "audioonly").map(f => ({
+      itag: f.itag,
+      mimeType: f.mimeType,
+      audioQuality: f.audioQuality,
+      bitrate: f.bitrate,
+      approxDurationMs: f.approxDurationMs || null,
+      contentLength: f.contentLength || null,
+      url: f.url
+    }));
 
     res.status(200).json({
       title: videoDetails.title,
@@ -111,9 +116,10 @@ export default async function handler(req, res) {
       views: videoDetails.viewCount,
       author: videoDetails.author?.name,
       thumbnails: videoDetails.thumbnails,
-      formats
+      audioFormats
     });
   } catch (err) {
+    console.error("info error", err);
     res.status(500).json({ error: "Could not get info", details: err.message });
   }
 }
