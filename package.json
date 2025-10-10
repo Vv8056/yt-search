@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "yt-search": "^2.11.2",
-    "ytdl-core": "^4.11.2"
+    "ytdl-core": "^4.11.5"
   }
 
 }
+
