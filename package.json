@@ -4,7 +4,7 @@
   "description": "YouTube search + metadata + streaming API using yt-search and ytdl-core. Ready to host on Vercel.",
   "main": "index.js",
   "scripts": {
-    "start": "node local-server.js"
+    "start": "vercel dev"
   },
   "engines": {
     "node": "22.x"
@@ -13,6 +13,4 @@
     "yt-search": "^2.11.2",
     "ytdl-core": "^4.11.5"
   }
-
 }
-
