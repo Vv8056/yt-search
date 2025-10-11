@@ -90,7 +90,7 @@ module.exports = async function (req, res) {
     author: v.author && v.author.name,
     url: v.url,
     thumbnail: v.thumbnail,
-    uploadedAgo: v.ago,
+    uploadedAgo: v.agoMs,
   }));
 
   res.setHeader('Cache-Control', 'public, s-maxage=120, max-age=60');
@@ -104,4 +104,5 @@ module.exports = async function (req, res) {
     results
   });
 };
+
 
