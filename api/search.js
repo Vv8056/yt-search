@@ -80,6 +80,11 @@ module.exports = async function (req, res) {
   const paged = videos.slice(start, start + limit);
 
   const results = paged.map(v => ({
+    let uploadDate = null;
+      if (v.agoMs && !isNaN(v.agoMs)) {
+        uploadDate = new Date(Date.now() - v.agoMs).toISOString();
+      }
+    
     id: v.videoId,
     title: v.title,
     description: v.description,
@@ -90,7 +95,7 @@ module.exports = async function (req, res) {
     author: v.author && v.author.name,
     url: v.url,
     thumbnail: v.thumbnail,
-    uploadedAgo: v.agoMs,
+    uploadDate: uploadDate,
   }));
 
   res.setHeader('Cache-Control', 'public, s-maxage=120, max-age=60');
@@ -104,5 +109,6 @@ module.exports = async function (req, res) {
     results
   });
 };
+
 
 
