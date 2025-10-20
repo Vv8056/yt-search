@@ -1,28 +1,18 @@
 // api/video-info.js
-import axios from 'axios';
-import Cors from 'cors';
+// GET /api/video-info?url=https://youtu.be/xxxxxxx OR ?id=xxxxxxx
 
-// Initialize CORS middleware
-const cors = Cors({
-  origin: '*', // Allow all origins (adjust if needed)
-  methods: ['GET', 'HEAD']
-});
+const axios = require('axios');
 
-// Helper to run middleware in Vercel serverless functions
-function runMiddleware(req, res, fn) {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) return reject(result);
-      return resolve(result);
-    });
-  });
+// Minimal production-safe CORS helper
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
-
-// Simple per-instance cache (resets on cold start)
-const cache = new Map();
 
 const API_BASE_URL = 'https://ytdl.socialplug.io/api/video-info';
 
+// Extract a valid YouTube video ID from URL or raw ID
 function extractVideoID(urlOrId) {
   try {
     if (/^[\w-]{11}$/.test(urlOrId)) return urlOrId;
@@ -39,36 +29,49 @@ function extractVideoID(urlOrId) {
   }
 }
 
-export default async function handler(req, res) {
-  await runMiddleware(req, res, cors);
+// Simple in-memory cache (resets on Vercel cold start)
+const cache = new Map();
 
-  const { url, id } = req.query;
+module.exports = async function (req, res) {
+  setCors(res);
 
-  if (!url && !id) {
-    return res.status(400).json({ error: 'Provide either url or id parameter' });
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
 
-  const videoId = extractVideoID(url || id);
+  const send = (status, data) => res.status(status).json(data);
+
+  const urlParam = req.query.url;
+  const idParam = req.query.id;
+
+  if (!urlParam && !idParam) {
+    return send(400, { error: 'Provide either ?url= or ?id= parameter' });
+  }
+
+  const videoId = extractVideoID(urlParam || idParam);
   if (!videoId) {
-    return res.status(400).json({ error: 'Invalid YouTube URL or ID' });
+    return send(400, { error: 'Invalid YouTube URL or ID' });
   }
 
-  // Check per-instance cache
+  // Cache check
   if (cache.has(videoId)) {
-    return res.json(cache.get(videoId));
+    return send(200, cache.get(videoId));
   }
 
   try {
-    const response = await axios.get(`${API_BASE_URL}?url=https://youtu.be/${videoId}`, {
-      timeout: 10000
-    });
+    const apiUrl = `${API_BASE_URL}?url=https://youtu.be/${videoId}`;
+    const response = await axios.get(apiUrl, { timeout: 10000 });
 
-    // Cache result
-    cache.set(videoId, response.data);
+    const data = response.data;
+    cache.set(videoId, data);
 
-    res.json(response.data);
+    // Short-term CDN caching
+    res.setHeader('Cache-Control', 'public, s-maxage=300, max-age=120');
+
+    send(200, data);
   } catch (error) {
     console.error('Error fetching video info:', error.message);
-    res.status(500).json({ error: 'Failed to fetch video info' });
+    send(500, { error: 'Failed to fetch video info' });
   }
-}
+};
