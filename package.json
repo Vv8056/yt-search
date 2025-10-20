@@ -10,13 +10,7 @@
     "node": "22.x"
   },
   "dependencies": {
-    "express": "^4.19.2",
     "axios": "^1.7.2",
     "yt-search": "^2.11.2"
-    "next": "14.2.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "tailwindcss": "^3.4.1",
-    "framer-motion": "^10.18.0"
   }
 }
