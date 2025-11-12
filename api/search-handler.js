@@ -66,17 +66,16 @@
 
 // /api/search-handler.js
 
-// Lazy dynamic import of node-fetch (compatible with Node 22 on Vercel)
 const fetchFn = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-// CORS helper
+// ✅ CORS Helper
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-// Available worker instances
+// ✅ Available worker instances
 const INSTANCES = [
   '/api/search-instance-1',
   '/api/search-instance-2',
@@ -84,44 +83,60 @@ const INSTANCES = [
 ];
 
 module.exports = async function (req, res) {
+  setCors(res);
+
+  // ✅ Handle preflight
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
+  const { query, limit = 10, page = 1, sort = '' } = req.query;
+  if (!query) return res.status(400).json({ error: 'Missing query parameter' });
+
   try {
-    setCors(res);
-    if (req.method === 'OPTIONS') return res.status(204).end();
+    // ✅ Ensure base URL works both locally & on production
+    const baseUrl =
+      process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : process.env.BASE_URL || 'http://localhost:3000';
 
-    const { query, limit = 10, page = 1, sort = '' } = req.query;
-    if (!query) return res.status(400).json({ error: 'Missing query parameter' });
+    // ✅ Pick a random instance for load balancing
+    const chosenInstance = INSTANCES[Math.floor(Math.random() * INSTANCES.length)];
 
-    // ✅ Ensure we have a proper base URL
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
+    // ✅ Construct full URL with encoded params
+    const params = new URLSearchParams({
+      query: query.toString(),
+      limit: limit.toString(),
+      page: page.toString(),
+      sort: sort.toString(),
+    });
 
-    // ✅ Pick random worker
-    const chosen = INSTANCES[Math.floor(Math.random() * INSTANCES.length)];
-    const targetUrl = `${baseUrl}${chosen}?query=${encodeURIComponent(query)}&limit=${limit}&page=${page}&sort=${sort}`;
+    const targetUrl = `${baseUrl}${chosenInstance}?${params.toString()}`;
+    console.log(`🔁 Forwarding to instance: ${targetUrl}`);
 
-    console.log('🔁 Forwarding search to:', targetUrl);
-
-    // ✅ Use dynamic fetch (fix for node-fetch@3)
+    // ✅ Fetch from the chosen instance
     const response = await fetchFn(targetUrl);
 
     if (!response.ok) {
-      throw new Error(`Worker responded with ${response.status}`);
+      const text = await response.text().catch(() => '');
+      throw new Error(`Worker error ${response.status}: ${text}`);
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => {
+      throw new Error('Invalid JSON from worker');
+    });
 
+    // ✅ Success response
     res.status(200).json({
-      master: true,
-      handledBy: chosen,
+      success: true,
+      distributed: true,
+      handledBy: chosenInstance,
       baseUrl,
-      data
+      results: data,
     });
   } catch (err) {
-    console.error('❌ Handler error:', err);
+    console.error('❌ Handler Error:', err);
     res.status(500).json({
-      error: 'Handler failed',
-      message: err.message || 'Unknown error'
+      success: false,
+      error: err.message || 'Handler failed',
     });
   }
 };
