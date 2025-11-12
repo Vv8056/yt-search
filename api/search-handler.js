@@ -1,6 +1,13 @@
 const fetch = require('node-fetch');
 
-// Simulated load balancer (random distribution)
+// Lightweight CORS helper
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+// List of available search instances
 const INSTANCES = [
   '/api/search-instance-1',
   '/api/search-instance-2',
@@ -8,27 +15,49 @@ const INSTANCES = [
 ];
 
 module.exports = async function (req, res) {
-  const { query, limit, page, sort } = req.query;
+  setCors(res);
 
-  if (!query) {
-    return res.status(400).json({ error: 'Missing query parameter' });
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
+  const { query, limit = 10, page = 1, sort = '' } = req.query;
+  if (!query) return res.status(400).json({ error: 'Missing query parameter' });
+
+  // Build base URL correctly for local or production
+  const baseUrl =
+    process.env.VERCEL_ENV === 'production'
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000';
+
+  // Randomly pick an instance
+  const pickRandomInstance = () => INSTANCES[Math.floor(Math.random() * INSTANCES.length)];
+
+  // Try up to 3 times in case one instance fails
+  let lastError = null;
+
+  for (let attempt = 0; attempt < INSTANCES.length; attempt++) {
+    const chosen = pickRandomInstance();
+    const url = `${baseUrl}${chosen}?query=${encodeURIComponent(query)}&limit=${limit}&page=${page}&sort=${sort}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Instance ${chosen} returned ${response.status}`);
+      const data = await response.json();
+
+      return res.json({
+        handledBy: chosen,
+        baseUrl,
+        master: true,
+        data,
+      });
+    } catch (err) {
+      console.error(`⚠️ Instance failed: ${err.message}`);
+      lastError = err;
+    }
   }
 
-  // Pick a random instance (you could improve this with load metrics later)
-  const chosen = INSTANCES[Math.floor(Math.random() * INSTANCES.length)];
-  const url = `${process.env.VERCEL_URL || 'http://localhost:3000'}${chosen}?query=${encodeURIComponent(query)}&limit=${limit || 10}&page=${page || 1}&sort=${sort || ''}`;
-
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-
-    res.json({
-      handledBy: chosen,
-      master: true,
-      data
-    });
-  } catch (err) {
-    console.error('Handler error:', err.message);
-    res.status(500).json({ error: 'Handler failed', details: err.message });
-  }
+  // If all instances failed
+  res.status(500).json({
+    error: 'All instances failed to respond',
+    details: lastError?.message,
+  });
 };
